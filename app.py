@@ -11,6 +11,7 @@ headers = {
     "Authorization": f"Bearer {API_KEY}"
 }
 
+# Page config
 st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
 
 st.title("🤖 AI Chatbot")
@@ -18,11 +19,11 @@ st.title("🤖 AI Chatbot")
 # Mode selection
 mode = st.radio("Choose mode:", ["Simple Chat", "Agent"])
 
-# Session state for context (IMPORTANT for Agent)
+# Session state for Agent context
 if "previous_response_id" not in st.session_state:
     st.session_state.previous_response_id = None
 
-# Input box
+# User input
 user_input = st.text_input("You:")
 
 # Send button
@@ -45,22 +46,33 @@ if st.button("Send"):
                 "max_completion_tokens": 500
             }
 
-            r = requests.post(
-                "https://server.iac.ac.il/api/v1/studentapi/chat/completions",
-                json=payload,
-                headers=headers
-            )
+            with st.spinner("Thinking..."):
+                r = requests.post(
+                    "https://server.iac.ac.il/api/v1/studentapi/chat/completions",
+                    json=payload,
+                    headers=headers
+                )
 
             data = r.json()
 
+            # ✅ Required by assignment
+            print("Quota status:", data.get("iac_quota_status"))
+
             try:
                 answer = data["choices"][0]["message"]["content"]
-                st.write(answer if answer else "No response text")
-            except:
-                st.write(data)
+
+                if answer and answer.strip():
+                    st.write(answer)
+                else:
+                    st.write("No response text (see JSON below)")
+                    st.json(data)
+
+            except Exception:
+                st.write("Error reading response")
+                st.json(data)
 
         # ----------------------------
-        # Agent (WITH previous_response_id)
+        # Agent (with previous_response_id)
         # ----------------------------
         else:
 
@@ -71,25 +83,32 @@ if st.button("Send"):
                 "tools": [{"type": "web_search"}]
             }
 
+            # Add context if exists
             if st.session_state.previous_response_id is not None:
                 payload["previous_response_id"] = st.session_state.previous_response_id
 
-            r = requests.post(
-                "https://server.iac.ac.il/api/v1/studentapi/responses",
-                json=payload,
-                headers=headers
-            )
+            with st.spinner("Thinking..."):
+                r = requests.post(
+                    "https://server.iac.ac.il/api/v1/studentapi/responses",
+                    json=payload,
+                    headers=headers
+                )
 
             data = r.json()
 
-            # Save ID for next message
+            # ✅ Required by assignment
+            print("Quota status:", data.get("iac_quota_status"))
+
+            # Save response ID for next message
             st.session_state.previous_response_id = data.get("id")
 
             try:
                 answer = data["output"][1]["content"][0]["text"]
                 st.write(answer)
-            except:
-                st.write(data)
+
+            except Exception:
+                st.write("Error reading response")
+                st.json(data)
 
     else:
         st.warning("Please enter a message")
