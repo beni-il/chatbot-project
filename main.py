@@ -50,7 +50,7 @@ if state == "0":
     print("End of chat")
 
 elif state == "1":
-    conversation = []
+    previous_response_id = None
 
     while True:
         prompt = input("You: ")
@@ -58,17 +58,16 @@ elif state == "1":
         if prompt == "exit":
             break
 
-        conversation.append({
-            "role": "user",
-            "content": prompt
-        })
-
         payload = {
             "reasoning": {"effort": "low"},
             "instructions": "Give a short answer up to 50 words only.",
-            "input": conversation,
+            "input": prompt,
             "tools": [{"type": "web_search"}]
         }
+
+        # Add context only if this is not the first request
+        if previous_response_id is not None:
+            payload["previous_response_id"] = previous_response_id
 
         r = requests.post(
             "https://server.iac.ac.il/api/v1/studentapi/responses",
@@ -76,16 +75,11 @@ elif state == "1":
             headers=headers
         )
 
-        print(r.json())
+        data = r.json()
+        print(data)
 
-        try:
-            reply = r.json()["output_text"]
-            conversation.append({
-                "role": "assistant",
-                "content": reply
-            })
-        except:
-            pass
+        # Save the response ID for the next request
+        previous_response_id = data.get("id")
 
     print("End of chat")
 
