@@ -85,8 +85,6 @@ Beni J, Noam K
 
 ## Version History
 
-## Version History
-
 - Initial chatbot implementation (Simple Chat mode)  
 - Added Agent mode with context using previous_response_id  
 - Implemented Streamlit user interface  
