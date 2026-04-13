@@ -19,7 +19,8 @@ The application also monitors token usage using `iac_quota_status` to help preve
 
 * Python 3.10 or higher  
 * pip (Python package manager)  
-* Internet connection  
+* Internet connection
+* Access to the IAC Student API (API key required)
 
 Libraries used:
 * streamlit  
