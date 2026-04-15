@@ -23,28 +23,50 @@ mode = st.radio("Choose mode:", ["Simple Chat", "Agent"])
 if "previous_response_id" not in st.session_state:
     st.session_state.previous_response_id = None
 
+# Session state for chat history (UI only)
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Clear chat button
+if st.button("Clear Chat"):
+    st.session_state.messages = []
+    st.session_state.previous_response_id = None
+    st.rerun()
+
+# Display chat history
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
 # User input
-user_input = st.text_input("You:")
+user_input = st.chat_input("Type your message...")
 
-# Send button
-if st.button("Send"):
+if user_input:
+    # Save and display user message
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_input
+    })
 
-    if user_input.strip():
+    with st.chat_message("user"):
+        st.markdown(user_input)
 
-        # ----------------------------
-        # Simple Chat
-        # ----------------------------
-        if mode == "Simple Chat":
+    # ----------------------------
+    # Simple Chat
+    # ----------------------------
+    if mode == "Simple Chat":
+        payload = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": user_input
+                }
+            ],
+            "max_completion_tokens": 500
+        }
 
-            payload = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": user_input
-                    }
-                ],
-                "max_completion_tokens": 500
-            }
+        with st.chat_message("assistant"):
+            response_placeholder = st.empty()
 
             with st.spinner("Thinking..."):
                 r = requests.post(
@@ -54,38 +76,46 @@ if st.button("Send"):
                 )
 
             data = r.json()
-
-            # ✅ Required by assignment
             print("Quota status:", data.get("iac_quota_status"))
 
             try:
                 answer = data["choices"][0]["message"]["content"]
 
                 if answer and answer.strip():
-                    st.write(answer)
+                    response_placeholder.markdown(answer)
                 else:
-                    st.write("No response text (see JSON below)")
+                    answer = "No response text"
+                    response_placeholder.markdown(answer)
                     st.json(data)
 
             except Exception:
-                st.write("Error reading response")
+                answer = "Error reading response"
+                response_placeholder.markdown(answer)
                 st.json(data)
 
-        # ----------------------------
-        # Agent (with previous_response_id)
-        # ----------------------------
-        else:
+        # Save assistant message for UI display only
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": answer
+        })
 
-            payload = {
-                "reasoning": {"effort": "low"},
-                "instructions": "Give a short answer up to 50 words only.",
-                "input": user_input,
-                "tools": [{"type": "web_search"}]
-            }
+    # ----------------------------
+    # Agent
+    # ----------------------------
+    else:
+        payload = {
+            "reasoning": {"effort": "low"},
+            "instructions": "Give a short answer up to 50 words only.",
+            "input": user_input,
+            "tools": [{"type": "web_search"}]
+        }
 
-            # Add context if exists
-            if st.session_state.previous_response_id is not None:
-                payload["previous_response_id"] = st.session_state.previous_response_id
+        # Add API context if this is not the first message
+        if st.session_state.previous_response_id is not None:
+            payload["previous_response_id"] = st.session_state.previous_response_id
+
+        with st.chat_message("assistant"):
+            response_placeholder = st.empty()
 
             with st.spinner("Thinking..."):
                 r = requests.post(
@@ -95,20 +125,38 @@ if st.button("Send"):
                 )
 
             data = r.json()
-
-            # ✅ Required by assignment
             print("Quota status:", data.get("iac_quota_status"))
 
-            # Save response ID for next message
+            # Save response ID for the next request
             st.session_state.previous_response_id = data.get("id")
 
             try:
-                answer = data["output"][1]["content"][0]["text"]
-                st.write(answer)
+                answer = None
+
+                # Find the assistant message safely
+                for item in data.get("output", []):
+                    if item.get("type") == "message":
+                        for content_item in item.get("content", []):
+                            if content_item.get("type") == "output_text":
+                                answer = content_item.get("text")
+                                break
+                        if answer:
+                            break
+
+                if answer and answer.strip():
+                    response_placeholder.markdown(answer)
+                else:
+                    answer = "Error reading response"
+                    response_placeholder.markdown(answer)
+                    st.json(data)
 
             except Exception:
-                st.write("Error reading response")
+                answer = "Error reading response"
+                response_placeholder.markdown(answer)
                 st.json(data)
 
-    else:
-        st.warning("Please enter a message")
+        # Save assistant message for UI display
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": answer
+        })

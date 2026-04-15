@@ -75,10 +75,6 @@ Common issues and solutions:
    streamlit run app.py
    ```
 
-
-streamlit run app.py
-
-
 ## Authors
 
 Beni J, Noam K
@@ -96,6 +92,5 @@ This project is for academic use only.
 
 ## Acknowledgments
 
-* IAC Student API
-* Streamlit documentation
-* Python community resources
+* [IAC Student API](https://landing.iac.ac.il/rimony/student_api.html)
+* [Streamlit documentation](https://docs.streamlit.io/develop/tutorials/chat-and-llm-apps)
