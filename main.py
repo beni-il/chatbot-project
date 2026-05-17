@@ -36,7 +36,7 @@ if state == "0":
                     "content": prompt
                 }
             ],
-            "max_completion_tokens": 500
+            "max_completion_tokens": 1000
         }
 
         r = requests.post(

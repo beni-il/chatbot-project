@@ -62,7 +62,7 @@ if user_input:
                     "content": user_input
                 }
             ],
-            "max_completion_tokens": 500
+            "max_completion_tokens": 1000
         }
 
         with st.chat_message("assistant"):

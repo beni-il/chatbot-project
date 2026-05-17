@@ -77,7 +77,7 @@ Common issues and solutions:
 
 ## Authors
 
-Beni J, Noam K
+Beni J, Noam K, Haim O
 
 ## Version History
 
